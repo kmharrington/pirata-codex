@@ -11,12 +11,12 @@ class Clash():
          clans_fname - file name of json with list of relevant clans
         """
         if fname is None:
-            fname = '../data/sc_api.json'
+            fname = '/home/pi/pirata-codex/data/sc_api.json'
         with open(fname) as f:
             self.connect_info = json.load(f)
 
         if clans_fname is None:
-            fname = '../data/clans.json'
+            fname = '/home/pi/pirata-codex/data/clans.json'
         with open(fname) as f:
             self.clan_list = json.load(f)['clans']
 
@@ -29,7 +29,7 @@ class Clash():
         """
         Retrieve SuperCell data about a clan
         args:
-         clan_tag - the clan tag
+         clan_tag - the clan tag (without the #)
         raises:
          any connection related issues
         returns:
@@ -39,11 +39,39 @@ class Clash():
         r.raise_for_status()
         return r.json()
 
+    def get_clan_warlog(self, clan_tag):
+        """
+        Retrieve SuperCell data about a clan
+        args:
+         clan_tag - the clan tag (without the #)
+        raises:
+         any connection related issues
+        returns:
+         json data from SuperCell
+        """
+        r = requests.get(self.connect_info['clans_url']+clan_tag+'/warlog', self.header)
+        r.raise_for_status()
+        return r.json()
+
+    def get_clan_war(self, clan_tag):
+        """
+        Retrieve SuperCell data about a clan
+        args:
+         clan_tag - the clan tag (without the #)
+        raises:
+         any connection related issues
+        returns:
+         json data from SuperCell
+        """
+        r = requests.get(self.connect_info['clans_url']+clan_tag+'/currentwar', self.header)
+        r.raise_for_status()
+        return r.json()
+    
     def get_player_data(self, player_tag):
         """
         Retrieve SuperCell data about a player
         args:
-         player_tag - the player tag
+         player_tag - the player tag (without the #)
         raises:
          any connection related issues
         returns:
