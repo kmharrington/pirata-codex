@@ -47,6 +47,12 @@ class Clan_Data(_Base):
         """
         if pull_time is None:
             pull_time = dt.datetime.now()
+
+        ## Deal with new clans with no war losses
+        for k in ['warWins', 'warLosses', 'warTies']:
+            if k not in data.keys():
+                data[k] = 0
+        
         return cls( clan_tag = data['tag'][1:],
                     time = pull_time,
                     num_members = data['members'],

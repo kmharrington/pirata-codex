@@ -11,7 +11,7 @@ from pirata_codex.clash import Clash
 
 formater = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
 db_logger = logging.getLogger('database')
-db_logger.setLevel(logging.DEBUG)
+db_logger.setLevel(logging.INFO)
 
 # I will want this later for file logging
 #fileHandler = logging.FileHandler("{0}/{1}.log".format(logPath, fileName))
@@ -81,6 +81,8 @@ def update_clan_data(update_players=True):
             continue
         pull_time = dt.datetime.now()
         data = clash.get_clan_data( clan.tag )
+        db_logger.debug('Pulled data from {}'.format(clan.name))
+        
         entry = Clan_Data.from_json(data, pull_time)
         db_logger.debug('Adding {} with {} members'.format(entry.clan_tag, entry.num_members))
         session.add(entry)
@@ -97,11 +99,16 @@ def update_clan_data(update_players=True):
                                 current_clan_tag = data['tag'][1:],
                                 first_seen = pull_time,
                                 last_seen = pull_time)
-                db_logger.debug('Adding new member {}'.format(member.name))                
+                db_logger.info('Adding new member {}'.format(member.name))                
                 session.add(member)
             else:
                 db_logger.debug('Found {} again'.format(member.name))
                 member.last_seen = pull_time
+                if member.name != mem_data['name']:
+                    db_logger.info('{} changed their name to {}'.format(member.name,
+                                                                        mem_data['name']))
+                    member.name = mem_data['name']
+
             session.commit()
     session.close()
     

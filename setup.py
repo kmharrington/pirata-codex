@@ -26,6 +26,7 @@ setup(name = 'pirata_codex',
       packages = ['pirata_codex'],
       package_dir = {'pirata_codex':'python'},
       cmdclass={'clean':CleanCommand,},
+      scripts = ['bin/alive_check.py']
       )
 
 
