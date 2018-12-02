@@ -69,12 +69,14 @@ def update_clan_data(update_players=True):
                     players and the time they were last seen in one of our
                     clans
     returns:
-        None
+        message to post on discord
     """
 
     session = get_session()
     clan_list = session.query(Clan).all()
     clash = Clash()
+    
+    message = ''
 
     for clan in clan_list:
         if clan.tag == "00000000":
@@ -99,7 +101,8 @@ def update_clan_data(update_players=True):
                                 current_clan_tag = data['tag'][1:],
                                 first_seen = pull_time,
                                 last_seen = pull_time)
-                db_logger.info('Adding new member {}'.format(member.name))                
+                db_logger.info('Adding new member {}'.format(member.name))
+                message += 'Found New Member - {}\n'.format(member.name)
                 session.add(member)
             else:
                 db_logger.debug('Found {} again'.format(member.name))
@@ -107,10 +110,13 @@ def update_clan_data(update_players=True):
                 if member.name != mem_data['name']:
                     db_logger.info('{} changed their name to {}'.format(member.name,
                                                                         mem_data['name']))
+                    message += '{} changed their name to {}\n'.format(member.name,
+                                                                mem_data['name'])
                     member.name = mem_data['name']
 
             session.commit()
     session.close()
+    return message
     
 
 def flag_missing_players( time_limit=5 ):
@@ -121,25 +127,33 @@ def flag_missing_players( time_limit=5 ):
         time_limit - the number of days a player hasn't been seen to consider
                     them inactive
     returns:
-        None
+        message to post on discord
     """
+    message = ''
     session = get_session()
     inactives = session.query(Player).filter( Player.last_seen <= dt.datetime.now()-
-                                        dt.timedelta(days=time_limit)).all() 
+                                        dt.timedelta(days=time_limit),
+                                        Player.status == ACTIVE).all() 
     db_logger.info('{} players are missing'.format(len(inactives)))
     for mem in inactives:
         mem.status = INACTIVE
+        message += '{} has left the clans\n'.format(mem.name)
     session.commit()
     session.close()
+    return message
 
 def update_player_data():
     """
     Pull activity data from all players listed as ACTIVE within Pirates
-    """
 
+    returns:
+        message to post on discord
+    """
+    
     session = get_session()
     members = session.query(Player).filter(Player.status==ACTIVE).all()
     db_logger.info('Updating {} players in the pirate family'.format(len(members)))
+    message = 'Updated info for the {} active members\n'.format(len(members))
     clash = Clash()
 
     for member in members:
@@ -150,6 +164,7 @@ def update_player_data():
         session.add(entry)
     session.commit()
     session.close()
+    return message
     
 
 
