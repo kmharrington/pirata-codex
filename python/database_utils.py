@@ -107,6 +107,7 @@ def update_clan_data(update_players=True):
             else:
                 db_logger.debug('Found {} again'.format(member.name))
                 member.last_seen = pull_time
+                member.current_clan_tag = clan.tag
                 if member.name != mem_data['name']:
                     db_logger.info('{} changed their name to {}'.format(member.name,
                                                                         mem_data['name']))
