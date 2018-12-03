@@ -39,12 +39,13 @@ for fname in sorted(os.listdir(old_folder)):
         #        data['Tag'][i][1:].decode('utf-8'), 
         #        data['TH_Level'][i])
         name = data['Name'][i].decode('utf-8', "ignore")
+        tag = data['Tag'][i][1:].decode('utf-8')
         q = session.query(Player)
-        player = q.filter(Player.tag == data['Tag'][i][1:].decode('utf-8')).one_or_none()
+        player = q.filter(Player.tag == tag).one_or_none()
         if player is None:
             print('Adding {} to database'.format(name))
             entry = Player( name = name,
-                            tag = data['Tag'][i][1:].decode('utf-8'),
+                            tag = tag,
                             status = pc.ACTIVE,
                             current_clan_tag = None,
                             first_seen = fdate,
@@ -55,29 +56,29 @@ for fname in sorted(os.listdir(old_folder)):
                 player.last_seen = fdate
         session.commit()
 
-        entry = Player_Data(player_tag = data['Tag'][i].decode('utf-8'),
+        entry = Player_Data(player_tag = tag,
                             time = fdate,
-                            town_hall = data['TH_Level'][i],
-                            builder_hall = data['BH_Level'][i],
-                            xp = data['XP_Level'][i],
-                            best_trophies = data['Best_Trophies'][i],
-                            best_builder = data['Best_Versus_Trophies'][i],
-                            trophies = data['Current_Trophies'][i],
-                            trophies_builder = data['Builder_Hall_Trophies'][i],
+                            town_hall = int(data['TH_Level'][i]),
+                            builder_hall = int(data['BH_Level'][i]),
+                            xp = int(data['XP_Level'][i]),
+                            best_trophies = int(data['Best_Trophies'][i]),
+                            best_builder = int(data['Best_Versus_Trophies'][i]),
+                            trophies = int(data['Current_Trophies'][i]),
+                            trophies_builder = int(data['Builder_Hall_Trophies'][i]),
                             wins_attacks = None,
                             wins_defenses = None,
                             wins_builder = None,
-                            barbarian_king = data['Barbarian_King'][i],
-                            archer_queen = data['Archer_Queen'][i],
-                            grand_warden = data['Grand_Warden'][i],
-                            battle_machine = data['Battle_Machine'][i],
-                            donates_total = data['Total_Donations'][i], 
-                            donates_spells = data['Total_Spells_Donated'][i],
-                            war_stars = data['Total_War_Stars'][i],
-                            gold_total = data['Total_Gold_Grab'][i],
-                            elixer_total = data['Total_Elixir_Grab'][i],
-                            de_total = data['Total_DE_Grab'][i],
-                            clan_games_xp = data['Clan_Games_XP'][i])
+                            barbarian_king = int(data['Barbarian_King'][i]),
+                            archer_queen = int(data['Archer_Queen'][i]),
+                            grand_warden = int(data['Grand_Warden'][i]),
+                            battle_machine = int(data['Battle_Machine'][i]),
+                            donates_total = int(data['Total_Donations'][i]), 
+                            donates_spells = int(data['Total_Spells_Donated'][i]),
+                            war_stars = int(data['Total_War_Stars'][i]),
+                            gold_total = int(data['Total_Gold_Grab'][i]),
+                            elixer_total = int(data['Total_Elixir_Grab'][i]),
+                            de_total = int(data['Total_DE_Grab'][i]),
+                            clan_games_xp = int(data['Clan_Games_XP'][i]))
 
         #print('Adding Data Entry for {} - {}'.format(entry.player_tag, entry.time))
         session.add(entry)
