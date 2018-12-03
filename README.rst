@@ -1,8 +1,8 @@
 Pirata - Codex
 --------------
 
-This will be a lightweight piece of code for tracking player activity 
-levels in Clash of Clans, will include an sqlite3 database structure and 
+This will be a lightweight piece of code for tracking player activity levels in Clash of Clans, 
+includes an sqlite3 database with all python interaction implemented with SQLAlchemy, as well as 
 mechanisms for running web requests to the Clash API and Discord.
 
 Lots of things are linked to jsons in a `data/` folder, which includes 
