@@ -5,84 +5,125 @@ from sqlalchemy import desc
 
 import pirata_codex as pc
 from pirata_codex.database import (Clan, Clan_Data, Player, Player_Data)
+from pirata_codex.config import *
 
-def _player_data_time( player, time, equality, tol=dt.timedelta(days=1),
-                        session=None):
+class Activity_Tracker:
     """
-    return the Player_Data object before or after a specific time
-    and within a specific tolerence
-
-    args: 
-        player - Player object
-        time - time of interest
-        equality - can be 'before' or 'after'
-        tol - time tolerence
-        session - database session
-    returns:
-        Player_Data object or None
+    class used to build up lists of player activity
     """
-    assert (equality == 'before' or equality == 'after')
-    if session is None:
-        session = pc.get_session()
+    def __init__(self):
+        self.session = pc.get_session()
+        self.configs = configs['activity']
 
-    pd = session.query(Player_Data).filter(Player_Data.player_tag == player.tag)
-    if equality == 'before':
-        pd = pd.filter(Player_Data.time <= time,
-                       Player_Data.time >= time - tol)
-        pd = pd.order_by( desc(Player_Data.time) ).first()
-    else:
-        pd = pd.filter(Player_Data.time >= time,
-                       Player_Data.time <= time + tol)
-        pd = pd.order_by( Player_Data.time ).first()
-    return pd
+        self.time_old = dt.datetime.now() - dt.timedelta(days = self.configs['time_limit'])
+        self.time_new = dt.datetime.now() 
+        self.time_tolerance = dt.timedelta(days=self.configs['time_tolerance'])
+        print('Time limit {} and time tolerance {}'.format(self.time_old,
+                                                        self.time_tolerance))
+        self._get_active_players()
+        print('Found {} active players'.format(len(self.active_list)))
+        self.issues = []
 
+    def _player_data_time(self, player, equality ):
+        """
+        return the Player_Data object before or after a specific time
+        and within a specific tolerence
 
-def look_for_no_raids(time_limit=dt.timedelta(7), t1=dt.datetime.now(),
-                        old_limit=dt.timedelta(1),
-                        exclude_list = []):
-    """
-    Look for members with no raids in the last week and builds message
-    with their names
+        args: 
+            player - Player object
+            equality - can be 'before' or 'after'
+        returns:
+            Player_Data object or None
+        """
+        assert (equality == 'before' or equality == 'after')
 
-    args:
-        time_limit - dt.timedelta where there have been no raids
-        t1 - reference time. Will this ever not be right now?
-        old_limit - dt.timedelta of how old the data should be to compare
-        exclude_list - list of clan tags where, if player is in that clan,
-                       we do not add them to the message
-    returns:
-        message of players with no raids
-    """
+        pd = self.session.query(Player_Data).filter(Player_Data.player_tag == player.tag)
+        if equality == 'before':
+            #print('Looking between {} and {}'.format(self.time_old - self.time_tolerance,
+            #                                        self.time_old))
+            pd = pd.filter(Player_Data.time <= self.time_old,
+                           Player_Data.time >= self.time_old - self.time_tolerance)
+            pd = pd.order_by( desc(Player_Data.time) ).first()
+        else:
+            pd = pd.filter(Player_Data.time <= self.time_new,
+                           Player_Data.time >= self.time_new - self.time_tolerance)
+            pd = pd.order_by( Player_Data.time ).first()
+        return pd
 
-    session = pc.get_session()
-    players = session.query(Player).filter(Player.status == pc.ACTIVE).all()
-    
-    message = 'Checked players resource grabs\n'
-
-    for player in players:
-        p0 = _player_data_time(player, t1 - time_limit, 'before', 
-                    tol=dt.timedelta(14), session=session)
-        if p0 is None:
-            # if player has not been around long enough
-            # print('{} has not been around for {} days'.format(player.name,
-            #                                                  time_limit.days))
-            continue
-        p1 = _player_data_time(player, t1 - old_limit, 'after', session=session)
-        if p1 is None:
-            raise ValueError('no recent enough player data for {}'.format(player.name))
+    def _get_active_players(self):
+        """
+        creates a list of active players last seen within the time tolerance
         
-        if (p0.gold_total == p1.gold_total and p0.elixer_total == p1.elixer_total
-                and p0.de_total == p1.de_total):
-            if p1.current_clan_tag in exclude_list:
-                continue
-            message += '{} has not raided in at least {} days\n'.format(player.name,
-                                                            (time_limit - old_limit).days)
+        args:
+            none
+        returns:
+            nones
+        """
+        self.active_list = self.session.query(Player).filter(Player.status == pc.ACTIVE,
+                          Player.last_seen >= dt.datetime.now()-self.time_tolerance).all()
 
-    return message
+    def add_issue(self, player, reason, value):
+        print('Found an issues with {}'.format(player.name))
+        for issue in self.issues:
+            if issue[0].tag == player.tag:
+                issue[1].append(reason)
+                issue[2].append(value)
+                return
+        self.issues.append( (player, [reason], [value]) )
+
+    def look_for_no_raids(self):
+        """
+        Look for members with no raids in the last week and adds to the issue list
+
+        args:
+            None
+        returns:
+            None
+        """
+
+        for player in self.active_list:
+            p0 = self._player_data_time(player, 'before')
+            if p0 is None:
+                continue
+            p1 = self._player_data_time(player, 'after')
+            #print( p0.payer_tag, p0.gold_total )
+            if p1 is None:
+                # I want this to cause fails so I know if my bot or database has issues
+                raise ValueError('no recent enough player data for {}'.format(player.name))
+            #print( p0.player_tag, p0.gold_total, p1.gold_total)
+            if (p0.gold_total == p1.gold_total and p0.elixer_total == p1.elixer_total
+                    and p0.de_total == p1.de_total):
+                self.add_issue( player, 'no raids', 0)
+
+    def look_for_low_donates(self):
+        """
+        Look for members who were low on donations and adds to the issue list
+
+        args:
+            None
+        returns:
+            None
+        """
+    
+        for player in self.active_list:
+            p0 = self._player_data_time(player, 'before')
+            p1 = self._player_data_time(player, 'after')
+            
+            if p0 is None or p1 is None:
+                continue
+            
+            if p1.donates_total - p0.donates_total <= self.configs['min_donates']:
+               self.add_issue( player, 'low donations', 
+                               p1.donates_total - p0.donates_total)
+
+#def check_donations( player_list, donate_min, time_limit=dt.timedelta(7),
+#                        t1=dt.datetime.now(), old_limit=dt.timedelta(1) ):
+
 
 
 if __name__ == "__main__":
-    look_for_no_raids(time_limit=dt.timedelta(7),
-                    exclude_list=['GYR0RRJ'])
+    tracker = Activity_Tracker()
+    tracker.look_for_no_raids()
+    tracker.look_for_low_donates()
 
 
