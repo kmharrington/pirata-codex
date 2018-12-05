@@ -20,10 +20,10 @@ class Activity_Tracker:
         self.time_tolerance = dt.timedelta(days=self.configs['time_tolerance'])
         print('Time limit {} and time tolerance {}'.format(self.time_old,
                                                         self.time_tolerance))
-        self._get_active_players()
-        print('Found {} active players'.format(len(self.active_list)))
+        self._build_player_list()
+        print('Found {} active players'.format(len(self.player_list)))
         self.issues = []
-
+    
     def _player_data_time(self, player, equality ):
         """
         return the Player_Data object before or after a specific time
@@ -50,38 +50,21 @@ class Activity_Tracker:
             pd = pd.order_by( Player_Data.time ).first()
         return pd
 
-    def _get_active_players(self):
+    def _build_player_list(self):
         """
-        creates a list of active players last seen within the time tolerance
-        
+        create a list of tuples which are [(player, p0, p1)] to calculate activity
+        flags off of
+
         args:
             none
         returns:
-            nones
+            none
         """
-        self.active_list = self.session.query(Player).filter(Player.status == pc.ACTIVE,
+
+        active_list = self.session.query(Player).filter(Player.status == pc.ACTIVE,
                           Player.last_seen >= dt.datetime.now()-self.time_tolerance).all()
-
-    def add_issue(self, player, reason, value):
-        print('Found an issues with {}'.format(player.name))
-        for issue in self.issues:
-            if issue[0].tag == player.tag:
-                issue[1].append(reason)
-                issue[2].append(value)
-                return
-        self.issues.append( (player, [reason], [value]) )
-
-    def look_for_no_raids(self):
-        """
-        Look for members with no raids in the last week and adds to the issue list
-
-        args:
-            None
-        returns:
-            None
-        """
-
-        for player in self.active_list:
+        self.player_list = []
+        for player in active_list:
             p0 = self._player_data_time(player, 'before')
             if p0 is None:
                 continue
@@ -90,40 +73,141 @@ class Activity_Tracker:
             if p1 is None:
                 # I want this to cause fails so I know if my bot or database has issues
                 raise ValueError('no recent enough player data for {}'.format(player.name))
-            #print( p0.player_tag, p0.gold_total, p1.gold_total)
-            if (p0.gold_total == p1.gold_total and p0.elixer_total == p1.elixer_total
-                    and p0.de_total == p1.de_total):
-                self.add_issue( player, 'no raids', 0)
+            self.player_list.append( [player, p0, p1] )
 
-    def look_for_low_donates(self):
+
+    def calc_resource_grab(self):
         """
-        Look for members who were low on donations and adds to the issue list
+        calculates a returns the resources raided by each player matched
+        to the player list
 
         args:
             None
         returns:
-            None
+            list of resources grabbed
         """
-    
-        for player in self.active_list:
-            p0 = self._player_data_time(player, 'before')
-            p1 = self._player_data_time(player, 'after')
-            
-            if p0 is None or p1 is None:
+        resources = np.zeros( (len(self.player_list),) )
+        for p,(player, p0, p1) in enumerate(self.player_list):
+            resources[p] = p1.gold_total - p0.gold_total + \
+                            p1.elixer_total - p0.elixer_total + \
+                            p1.de_total - p0.de_total
+        return resources
+
+    def calc_donates(self):
+        """
+        calculate the total donations for everyone
+
+        args:
+            None
+        returns:
+            list of donations
+        """
+        donates = np.zeros( (len(self.player_list),) )
+        for p,(player, p0, p1) in enumerate(self.player_list):
+            donates[p] = p1.donates_total - p0.donates_total
+        return donates
+
+
+    def calc_clan_games(self):
+        """
+        calculate the clan games XP for everyone
+
+        args:
+            None
+        returns:
+            list of clan game xp
+        """
+        cg_xp = np.zeros( (len(self.player_list),) )
+        for p,(player, p0, p1) in enumerate(self.player_list):
+            cg_xp[p] = p1.clan_games_xp - p0.clan_games_xp
+        return cg_xp
+
+    def calc_war_stars(self):
+        """
+        calculate the total war stars for everyone
+
+        args:
+            None
+        returns:
+            list of war stars
+        """
+        war_stars = np.zeros( (len(self.player_list),) )
+        for p,(player, p0, p1) in enumerate(self.player_list):
+            war_stars[p] = p1.war_stars - p0.war_stars
+        return war_stars
+
+    def create_activity_array(self):
+        array = np.zeros( len(self.player_list), 
+                    dtype = [('names', 'S30'),
+                             ('tag', 'S30'), ('clan_tag', 'S30'),
+                             ('donates', np.int32),
+                             ('war_stars', np.int32),
+                             ('clan_games', np.int32),
+                             ('resources', np.int32)])
+        array['names'] = [ removeNonAscii(p[0].name) for p in self.player_list]
+        array['tag'] = [p[0].tag for p in self.player_list]
+        array['clan_tag'] = [p[0].current_clan_tag for p in self.player_list]
+        array['donates'] = self.calc_donates()
+        array['clan_games'] = self.calc_clan_games()
+        array['war_stars'] = self.calc_war_stars()
+        array['resources'] = self.calc_resource_grab()/1000
+        
+        self.activity_array = array
+
+    def check_minimums(self):
+        if not hasattr(self, 'activity_array'):
+            self.create_activity_array()
+
+        if not 'min_donates' in self.configs.keys():
+            print('No minimum donations in config file')
+            self.configs['min_donates'] = np.inf
+        if not 'min_war_stars' in self.configs.keys():
+            print('No minimum war stars in configs')
+            self.configs['min_war_stars'] = np.inf
+        if not 'min_clan_games' in self.configs.keys():
+            print('No minimum clan games in configs')
+            self.configs['min_clan_games'] = np.inf
+        if not 'min_resources' in self.configs.keys():
+            print('No minimum resources in configs')
+            self.configs['min_resources'] = np.inf
+        
+        msk = np.all([self.activity_array['donates'] < self.configs['min_donates'],
+                      self.activity_array['war_stars'] < self.configs['min_war_stars'],
+                      self.activity_array['clan_games'] < self.configs['min_clan_games'],
+                      self.activity_array['resources'] < self.configs['min_resources'],],axis=0)
+
+        failed = np.sort( self.activity_array[msk], order='resources')
+        message = '----------------\n'
+        if len(failed) > 0:
+            message += 'Between {} and {}\n'.format(self.time_old, self.time_new) 
+            message += '----------------\n'
+        for i in range(len(failed)):
+            if failed['tag'][i].decode('utf-8') in self.configs['exclude_list']['players']:
                 continue
-            
-            if p1.donates_total - p0.donates_total <= self.configs['min_donates']:
-               self.add_issue( player, 'low donations', 
-                               p1.donates_total - p0.donates_total)
+            if failed['clan_tag'][i].decode('utf-8') in self.configs['exclude_list']['clans']:
+                continue
+            message += '{} missed activity requirements\n'.format(
+                                                    failed['names'][i].decode('utf-8'))
+            message += '\t{} donations,\t{} war stars,'.format(failed['donates'][i],
+                                                                failed['war_stars'][i])
+            message += '\t{} clan games\n'.format(failed['clan_games'][i])
+            message += '\tCollected {} in resources\n'.format(failed['resources'][i]*1000)
+            message += '----------------\n'
+        return message
 
-#def check_donations( player_list, donate_min, time_limit=dt.timedelta(7),
-#                        t1=dt.datetime.now(), old_limit=dt.timedelta(1) ):
+    
 
 
+def removeNonAscii(s): 
+    return "".join(i for i in s if ord(i)<128)
 
 if __name__ == "__main__":
     tracker = Activity_Tracker()
-    tracker.look_for_no_raids()
-    tracker.look_for_low_donates()
+    #print( tracker.calc_resource_grab() )
+    #print( tracker.calc_donates() )
+    #print( tracker.calc_clan_games() )
+    #print( tracker.calc_war_stars() )
+    tracker.check_minimums()
+    #tracker.look_for_low_donates()
 
 

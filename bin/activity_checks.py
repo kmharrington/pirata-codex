@@ -6,8 +6,8 @@ import datetime as dt
 discord = pc.Discord()
 message = ''
 try:
-    message += pc.activity.look_for_no_raids(time_limit = dt.timedelta(7),
-                                    exclude_list=['GYR0RRJ'])
+    tracker = pc.activity.Activity_Tracker()
+    message += tracker.check_minimums()
 except:
     discord.send('Activity Check failed\n'+message)
 else:

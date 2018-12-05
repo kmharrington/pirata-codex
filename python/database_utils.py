@@ -104,7 +104,11 @@ def update_clan_data(update_players=True):
                 db_logger.info('Adding new member {}'.format(member.name))
                 message += 'Found New Member - {}\n'.format(member.name)
                 session.add(member)
+
             else:
+                if member.status == INACTIVE:
+                    message += 'Found previous member - {}!\n'.format(member.name)
+                    member.status == ACTIVE
                 db_logger.debug('Found {} again'.format(member.name))
                 member.last_seen = pull_time
                 member.current_clan_tag = clan.tag
