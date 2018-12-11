@@ -104,11 +104,12 @@ def update_clan_data(update_players=True):
                 db_logger.info('Adding new member {}'.format(member.name))
                 message += 'Found New Member - {}\n'.format(member.name)
                 session.add(member)
-
+                session.commit()
             else:
                 if member.status == INACTIVE:
                     message += 'Found previous member - {}!\n'.format(member.name)
-                    member.status == ACTIVE
+                    member.status = ACTIVE
+                    session.commit()
                 db_logger.debug('Found {} again'.format(member.name))
                 member.last_seen = pull_time
                 member.current_clan_tag = clan.tag
@@ -118,8 +119,7 @@ def update_clan_data(update_players=True):
                     message += '{} changed their name to {}\n'.format(member.name,
                                                                 mem_data['name'])
                     member.name = mem_data['name']
-            
-            session.commit()
+                session.commit()
     session.close()
     return message
     
