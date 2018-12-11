@@ -28,7 +28,8 @@ setup(name = 'pirata_codex',
       cmdclass={'clean':CleanCommand,},
       scripts = ['bin/alive_check.py',
                  'bin/update_tables.py',
-                 'bin/activity_checks.py']
+                 'bin/activity_checks.py',
+                 'bin/backup.py']
       )
 
 

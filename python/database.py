@@ -167,7 +167,7 @@ class Player_Data(_Base):
 
 
 def get_engine():
-    return create_engine('sqlite:///{}'.format(DB_NAME))
+    return create_engine('sqlite:///{}'.format(BASEDIR + configs['database']['db_name']))
 
 def create_tables():
     engine = get_engine()
