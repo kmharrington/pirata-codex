@@ -118,7 +118,7 @@ def update_clan_data(update_players=True):
                     message += '{} changed their name to {}\n'.format(member.name,
                                                                 mem_data['name'])
                     member.name = mem_data['name']
-
+            
             session.commit()
     session.close()
     return message
@@ -167,6 +167,7 @@ def update_player_data():
         entry = Player_Data.from_json(mem_data, pull_time)
         db_logger.debug('Adding Entry for {} from {}'.format(entry.player_tag, entry.time))
         session.add(entry)
+    member.current_clan_tag = mem_data['clan']['tag'][1:]
     session.commit()
     session.close()
     return message

@@ -186,6 +186,7 @@ class Activity_Tracker:
                 continue
             if failed['clan_tag'][i].decode('utf-8') in self.configs['exclude_list']['clans']:
                 continue
+            
             message += '{} missed activity requirements\n'.format(
                                                     failed['names'][i].decode('utf-8'))
             message += '\t{} donations,\t{} war stars,'.format(failed['donates'][i],
