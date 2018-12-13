@@ -74,7 +74,35 @@ class Player(_Base):
 
     data = relationship("Player_Data",
                         back_populates='player')
+
+    def town_hall(self):
+        # Return players last seen town hall level
+        if len(self.data) == 0:
+            print('No data for player?')
+            return np.nan
+        return self.data[-1].town_hall
     
+    def archer_queen(self):
+        # Return players last seen AQ level
+        if len(self.data) == 0:
+            print('No data for player?')
+            return np.nan
+        return self.data[-1].archer_queen
+
+    def barbarian_king(self):
+        # Return players last seen BK level
+        if len(self.data) == 0:
+            print('No data for player?')
+            return np.nan
+        return self.data[-1].barbarian_king
+
+    def grand_warden(self):
+        # Return players last seen town hall level
+        if len(self.data) == 0:
+            print('No data for player?')
+            return np.nan
+        return self.data[-1].grand_warden
+
 class Player_Data(_Base):
     __tablename__ = 'Player_Data'
 

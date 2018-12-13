@@ -1,3 +1,4 @@
+#!/usr/bin/enc python3
 """
 Backs up the database file to Dropbox.
 Code is basically stolen from Dropbox example

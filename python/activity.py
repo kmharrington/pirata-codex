@@ -67,7 +67,7 @@ class Activity_Tracker:
         for player in active_list:
             p0 = self._player_data_time(player, 'before')
             if p0 is None:
-                continue
+                p0 = None
             p1 = self._player_data_time(player, 'after')
             #print( p0.payer_tag, p0.gold_total )
             if p1 is None:
@@ -88,6 +88,9 @@ class Activity_Tracker:
         """
         resources = np.zeros( (len(self.player_list),) )
         for p,(player, p0, p1) in enumerate(self.player_list):
+            if p0 is None:
+                resources[p] = np.nan
+                continue
             resources[p] = p1.gold_total - p0.gold_total + \
                             p1.elixer_total - p0.elixer_total + \
                             p1.de_total - p0.de_total
@@ -104,7 +107,12 @@ class Activity_Tracker:
         """
         donates = np.zeros( (len(self.player_list),) )
         for p,(player, p0, p1) in enumerate(self.player_list):
+            if p0 is None:
+                print(player.name +'is new') 
+                donates[p] = np.nan
+                continue
             donates[p] = p1.donates_total - p0.donates_total
+        print(donates)
         return donates
 
 
@@ -119,6 +127,9 @@ class Activity_Tracker:
         """
         cg_xp = np.zeros( (len(self.player_list),) )
         for p,(player, p0, p1) in enumerate(self.player_list):
+            if p0 is None:
+                cg_xp[p] = np.nan
+                continue
             cg_xp[p] = p1.clan_games_xp - p0.clan_games_xp
         return cg_xp
 
@@ -133,6 +144,9 @@ class Activity_Tracker:
         """
         war_stars = np.zeros( (len(self.player_list),) )
         for p,(player, p0, p1) in enumerate(self.player_list):
+            if p0 is None:
+                war_stars[p] = np.nan
+                continue
             war_stars[p] = p1.war_stars - p0.war_stars
         return war_stars
 
@@ -140,12 +154,24 @@ class Activity_Tracker:
         array = np.zeros( len(self.player_list), 
                     dtype = [('names', 'S30'),
                              ('tag', 'S30'), ('clan_tag', 'S30'),
-                             ('donates', np.int32),
-                             ('war_stars', np.int32),
-                             ('clan_games', np.int32),
-                             ('resources', np.int32)])
+                             ('donates', np.float),
+                             ('war_stars', np.float),
+                             ('clan_games', np.float),
+                             ('resources', np.float),
+                             ('barbarian_king', np.int32),
+                             ('archer_queen', np.int32),
+                             ('grand_warden', np.int32),
+                             ('total_heroes', np.int32),
+                             ('town_hall', np.int32)])
         array['names'] = [ removeNonAscii(p[0].name) for p in self.player_list]
         array['tag'] = [p[0].tag for p in self.player_list]
+        array['town_hall'] = [p[0].town_hall() for p in self.player_list]
+        array['barbarian_king'] = [p[0].barbarian_king() for p in self.player_list]
+        array['archer_queen'] = [p[0].archer_queen() for p in self.player_list]
+        array['grand_warden'] = [p[0].grand_warden() for p in self.player_list]
+        array['total_heroes'] = [p[0].barbarian_king() +
+                                 p[0].archer_queen() +
+                                 p[0].grand_warden() for p in self.player_list]
         array['clan_tag'] = [p[0].current_clan_tag for p in self.player_list]
         array['donates'] = self.calc_donates()
         array['clan_games'] = self.calc_clan_games()
@@ -175,7 +201,10 @@ class Activity_Tracker:
                       self.activity_array['war_stars'] < self.configs['min_war_stars'],
                       self.activity_array['clan_games'] < self.configs['min_clan_games'],
                       self.activity_array['resources'] < self.configs['min_resources'],],axis=0)
-
+        msk[np.isnan(self.activity_array['donates'])] = False
+        print( np.sum(msk) )
+        print( self.activity_array['donates'])
+        print( self.activity_array['resources'][msk])
         failed = np.sort( self.activity_array[msk], order='resources')
         message = '----------------\n'
         if len(failed) > 0:
@@ -194,6 +223,7 @@ class Activity_Tracker:
             message += '\t{} clan games\n'.format(failed['clan_games'][i])
             message += '\tCollected {} in resources\n'.format(failed['resources'][i]*1000)
             message += '----------------\n'
+        #print(message)
         return message
 
     
