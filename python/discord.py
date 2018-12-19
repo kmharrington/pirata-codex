@@ -15,4 +15,12 @@ class Discord:
         self.url = data['url']
 
     def send(self, message):
-        requests.post(self.url, {'content':message} )
+        while message is not None:
+            if len(message)>2000:
+                piece = message[:2000]
+                message = message[2000:]
+            else:
+                piece = message
+                message = None
+            requests.post(self.url, {'content': piece})
+
