@@ -176,7 +176,7 @@ class Activity_Tracker:
         array['donates'] = self.calc_donates()
         array['clan_games'] = self.calc_clan_games()
         array['war_stars'] = self.calc_war_stars()
-        array['resources'] = self.calc_resource_grab()/1000
+        array['resources'] = self.calc_resource_grab()
         
         self.activity_array = array
 
@@ -202,9 +202,9 @@ class Activity_Tracker:
                       self.activity_array['clan_games'] < self.configs['min_clan_games'],
                       self.activity_array['resources'] < self.configs['min_resources'],],axis=0)
         msk[np.isnan(self.activity_array['donates'])] = False
-        print( np.sum(msk) )
-        print( self.activity_array['donates'])
-        print( self.activity_array['resources'][msk])
+        #print( np.sum(msk) )
+        #print( self.activity_array['donates'])
+        #print( self.activity_array['resources'][msk])
         failed = np.sort( self.activity_array[msk], order='resources')
         message = '----------------\n'
         if len(failed) > 0:
@@ -221,7 +221,7 @@ class Activity_Tracker:
             message += '\t{} donations,\t{} war stars,'.format(failed['donates'][i],
                                                                 failed['war_stars'][i])
             message += '\t{} clan games\n'.format(failed['clan_games'][i])
-            message += '\tCollected {} in resources\n'.format(failed['resources'][i]*1000)
+            message += '\tCollected {} in resources\n'.format(failed['resources'][i])
             message += '----------------\n'
         #print(message)
         return message
