@@ -11,5 +11,5 @@ try:
 except:
     discord.send('Activity Check failed\n'+message)
 else:
-    discord.send('Activity Check was successful\n' + message)
+    discord.send(message)
 

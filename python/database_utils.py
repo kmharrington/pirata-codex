@@ -116,9 +116,10 @@ def update_clan_data(update_players=True):
                 if member.name != mem_data['name']:
                     db_logger.info('{} changed their name to {}'.format(member.name,
                                                                         mem_data['name']))
-                    message += '{} changed their name to {}\n'.format(member.name,
+                    message += '*{}* changed their name to *{}*\n'.format(member.name,
                                                                 mem_data['name'])
                     member.name = mem_data['name']
+                
                 session.commit()
     session.close()
     return message

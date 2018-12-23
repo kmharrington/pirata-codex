@@ -17,4 +17,4 @@ try:
 except:
     discord.send('Clash API pulls and/or Database update failed\n'+message)
 else:
-    discord.send('Database Update was successful\n'+message)
+    discord.send(message)
