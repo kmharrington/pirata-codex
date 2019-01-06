@@ -1,3 +1,5 @@
+import datetime as dt
+import dateutil.parser as dp
 import requests
 import json
 
@@ -25,6 +27,10 @@ class Clash():
                 'Authorization':'Bearer ' + self.connect_info['token']
                 }
 
+    @staticmethod
+    def convert_time(time_str):
+        return dp.parse( time_str ).astimezone(tz=None).replace(tzinfo=None)
+    
     def get_clan_data(self, clan_tag):
         """
         Retrieve SuperCell data about a clan
@@ -81,3 +87,5 @@ class Clash():
                          self.header)
         r.raise_for_status()
         return r.json()
+
+

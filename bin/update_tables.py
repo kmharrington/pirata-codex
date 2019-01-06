@@ -14,6 +14,8 @@ try:
     message += utils.flag_missing_players()
     # Update the Player_Data table
     message += utils.update_player_data()
+    # Update the war status/list
+    message += utils.update_war_list()
 except:
     discord.send('Clash API pulls and/or Database update failed\n'+message)
 else:

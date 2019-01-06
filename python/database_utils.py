@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import datetime as dt
+import numpy as np
 
 from sqlalchemy import and_, or_, not_
 
@@ -168,11 +169,68 @@ def update_player_data():
         entry = Player_Data.from_json(mem_data, pull_time)
         db_logger.debug('Adding Entry for {} from {}'.format(entry.player_tag, entry.time))
         session.add(entry)
-    member.current_clan_tag = mem_data['clan']['tag'][1:]
-    session.commit()
+        if "clan" in mem_data.keys():
+            member.current_clan_tag = mem_data['clan']['tag'][1:]
+        else:
+            member.current_clan_tag = "00000000"
+        session.commit()
     session.close()
     return message
     
+def update_war_list():
+    '''
+    Check each clan for wars, update war info clan data and
+    in player data
+    '''
 
+    session = get_session()
+    clan_list = session.query(Clan).all()
+    clash = Clash()
+    
+    message = ''
 
+    for clan in clan_list:
+        if clan.tag == "00000000":
+            continue
+        
+        cd = clan.data[-1]
+        
+        war = clash.get_clan_war(clan.tag)
+        war_prep = clash.convert_time( war['preparationStartTime'])
+        war_start = clash.convert_time( war['startTime'])
+        war_end = clash.convert_time( war['endTime'])
+
+        if cd.time > war_prep and cd.time < war_start:
+            cd.war_state = PREP
+            message += '{} is in prep against {}\n'.format(clan.name, war['opponent']['name'])
+        elif cd.time > war_start and cd.time < war_end:
+            cd.war_state = BATTLE
+            message += '{} is battling {}\n'.format(clan.name, war['opponent']['name'])
+        elif cd.time > war_end:
+            cd.war_state = ENDED
+        else:
+            raise ValueError('How did the logic die here?')
+        cd.war_opponent = war['opponent']['tag'][1:]
+        session.commit()
+        
+        ## don't update player info if war is over
+        if cd.war_state == ENDED:
+            continue
+
+        for mem in war['clan']['members']:
+            member = session.query(Player).filter(Player.tag == mem['tag'][1:]).one()
+            md = member.data[-1]
+            ## B/c I messed up the table definition
+            mdt = dt.datetime.strptime(md.time, '%Y-%m-%d %H:%M:%S.%f')
+            if mdt > war_prep and mdt < war_start:
+                md.war_state = PREP
+            elif mdt > war_start and mdt < war_end:
+                md.war_state = BATTLE
+            elif mdt > war_end:
+                md.war_state = END
+            md.in_war = True
+            md.war_opponent = war['opponent']['tag'][1:]
+            session.commit()
+    session.close()
+    return message    
 

@@ -34,6 +34,10 @@ class Clan_Data(_Base):
     war_losses = Column(Integer)
     war_ties = Column(Integer)
 
+    war_state = Column(Integer)
+    ## opponent will be clan tag, not name
+    war_opponent = Column(String)
+
     @classmethod
     def from_json(cls, data, pull_time = None ):
         """
@@ -138,6 +142,10 @@ class Player_Data(_Base):
 
     # Wars
     war_stars = Column(Integer)
+    ## the in_war flag will be set elsewhere after creation
+    in_war = Column(Boolean, default = False)
+    war_state = Column(Integer)
+    war_opponent = Column(String)
 
     # Raiding
     gold_total = Column(Integer)
