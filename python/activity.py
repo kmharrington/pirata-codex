@@ -75,6 +75,27 @@ class Activity_Tracker:
                 raise ValueError('no recent enough player data for {}'.format(player.name))
             self.player_list.append( [player, p0, p1] )
 
+    def calc_war_count(self):
+        """
+        calculates and returns the number of wars each player has been in
+        matched to the player list
+        """
+        wars = np.zeros( (len(self.player_list),) )
+        for p, (player, p0, p1) in enumerate(self.player_list):
+            if p0 is None:
+                wars[p] = np.nan
+                continue
+            q = self.session.query(Player_Data).filter(Player_Data.player_tag == player.tag)
+            q = q.filter( Player_Data.time >= p0.datetime() - self.time_tolerance,
+                          Player_Data.time <= p1.datetime() + self.time_tolerance,
+                          Player_Data.in_war,
+                          Player_Data.war_state != ENDED).all()
+            if len(q) == 0:
+                wars[p] = 0
+                continue
+            opponents = [md.war_opponent for md in q]
+            wars[p] = len( np.unique(opponents) )
+        return wars
 
     def calc_resource_grab(self):
         """

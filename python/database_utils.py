@@ -213,10 +213,6 @@ def update_war_list():
         cd.war_opponent = war['opponent']['tag'][1:]
         session.commit()
         
-        ## don't update player info if war is over
-        if cd.war_state == ENDED:
-            continue
-
         for mem in war['clan']['members']:
             member = session.query(Player).filter(Player.tag == mem['tag'][1:]).one()
             md = member.data[-1]
@@ -227,7 +223,7 @@ def update_war_list():
             elif mdt > war_start and mdt < war_end:
                 md.war_state = BATTLE
             elif mdt > war_end:
-                md.war_state = END
+                md.war_state = ENDED
             md.in_war = True
             md.war_opponent = war['opponent']['tag'][1:]
             session.commit()

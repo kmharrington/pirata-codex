@@ -152,6 +152,9 @@ class Player_Data(_Base):
     elixer_total = Column(Integer)
     de_total = Column(Integer)
     clan_games_xp = Column(Integer)
+    
+    def datetime(self):
+        return dt.datetime.strptime(self.time, '%Y-%m-%d %H:%M:%S.%f')
 
     @classmethod
     def from_json(cls, data, pull_time = None):
