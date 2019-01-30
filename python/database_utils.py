@@ -196,6 +196,9 @@ def update_war_list():
         cd = clan.data[-1]
         
         war = clash.get_clan_war(clan.tag)
+        ## Add exception for when war isn't there
+        if 'state' in war.keys() and war['state'] == 'notInWar':
+            continue
         war_prep = clash.convert_time( war['preparationStartTime'])
         war_start = clash.convert_time( war['startTime'])
         war_end = clash.convert_time( war['endTime'])

@@ -86,8 +86,8 @@ class Activity_Tracker:
                 wars[p] = np.nan
                 continue
             q = self.session.query(Player_Data).filter(Player_Data.player_tag == player.tag)
-            q = q.filter( Player_Data.time >= p0.datetime() - self.time_tolerance,
-                          Player_Data.time <= p1.datetime() + self.time_tolerance,
+            q = q.filter( Player_Data.time >= p0.datetime() - self.time_tolerance/2.0,
+                          Player_Data.time <= p1.datetime() + self.time_tolerance/2.0,
                           Player_Data.in_war,
                           Player_Data.war_state != ENDED).all()
             if len(q) == 0:
@@ -177,6 +177,7 @@ class Activity_Tracker:
                              ('tag', 'S30'), ('clan_tag', 'S30'),
                              ('donates', np.float),
                              ('war_stars', np.float),
+                             ('war_count', np.float),
                              ('clan_games', np.float),
                              ('resources', np.float),
                              ('barbarian_king', np.int32),
@@ -197,6 +198,7 @@ class Activity_Tracker:
         array['donates'] = self.calc_donates()
         array['clan_games'] = self.calc_clan_games()
         array['war_stars'] = self.calc_war_stars()
+        array['war_count'] = self.calc_war_count()
         array['resources'] = self.calc_resource_grab()
         
         self.activity_array = array
@@ -217,11 +219,15 @@ class Activity_Tracker:
         if not 'min_resources' in self.configs.keys():
             print('No minimum resources in configs')
             self.configs['min_resources'] = np.inf
+        if not 'min_war_count' in self.configs.keys():
+            print('No minimum war count in configs')
+            self.configs['min_war_count'] = np.inf
         
         msk = np.all([self.activity_array['donates'] < self.configs['min_donates'],
                       self.activity_array['war_stars'] < self.configs['min_war_stars'],
                       self.activity_array['clan_games'] < self.configs['min_clan_games'],
-                      self.activity_array['resources'] < self.configs['min_resources'],],axis=0)
+                      self.activity_array['resources'] < self.configs['min_resources'],
+                      self.activity_array['war_count'] < self.configs['min_war_count']],axis=0)
         msk[np.isnan(self.activity_array['donates'])] = False
         #print( np.sum(msk) )
         #print( self.activity_array['donates'])
