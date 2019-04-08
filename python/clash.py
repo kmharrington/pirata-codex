@@ -71,6 +71,20 @@ class Clash():
         r.raise_for_status()
         return r.json()
    
+    def get_clan_cwl(self, clan_tag):
+        """
+        Retrieve SuperCell data about a CWL season
+        args:
+         clan_tag - the clan tag (without the #)
+        raises:
+         any connection related issues
+        returns:
+         json data from SuperCell
+        """
+        r = requests.get(self.connect_info['clans_url']+clan_tag+'/currentwar/leaguegroup', self.header)
+        r.raise_for_status()
+        return r.json()
+        
     def get_clan_cwl_war(self, clan_tag):
         """
         Retrieve SuperCell data about a clan war
@@ -81,9 +95,20 @@ class Clash():
         returns:
          json data from SuperCell
         """
-        r = requests.get(self.connect_info['clans_url']+clan_tag+'/currentwar', self.header)
-        r.raise_for_status()
-        return r.json()
+        cwl = self.get_clan_cwl(clan_tag)
+        if cwl['state'] != 'inWar':
+            return 
+        
+        for day in cwl['rounds']:
+            if day['warTags'][0] == '#0':
+                continue
+            for tag in day['warTags']:
+                r = requests.get(self.connect_info['cwl_url']+tag[1:], self.header)
+                cwl_war = r.json()
+                if cwl_war['clan']['tag'][1:] == clan_tag or cwl_war['opponent']['tag'][1:] ==clan_tag:
+                    if cwl_war['state'] != 'warEnded':
+                        return cwl_war
+
 
     def get_player_data(self, player_tag):
         """

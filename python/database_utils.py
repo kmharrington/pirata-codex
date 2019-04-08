@@ -194,7 +194,13 @@ def update_war_list():
         war = clash.get_clan_war(clan.tag)
         ## Add exception for when war isn't there
         if 'state' in war.keys() and war['state'] == 'notInWar':
-            continue
+            war = clash.get_clan_cwl_war(clan.tag)
+            if war is None:
+                continue
+            if war['opponent']['name'] == clan.name:
+                x = war['clan']
+                war['clan'] = war['opponent']
+                war['opponent'] = x
         war_prep = clash.convert_time( war['preparationStartTime'])
         war_start = clash.convert_time( war['startTime'])
         war_end = clash.convert_time( war['endTime'])
@@ -212,6 +218,7 @@ def update_war_list():
         cd.war_opponent = war['opponent']['tag'][1:]
         session.commit()
         
+        print('Searching for members in {}'.format(war['clan']['name']))
         for mem in war['clan']['members']:
             member = session.query(Player).filter(Player.tag == mem['tag'][1:]).one()
             md = member.data[-1]
