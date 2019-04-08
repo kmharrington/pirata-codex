@@ -179,11 +179,14 @@ class Player_Data(_Base):
                 gw = hero['level']
             elif 'Machine' in hero['name']:
                 bm = hero['level']
-
+        if not 'builderHallLevel' in data.keys():
+            builder = 0
+        else:
+            builder = data['builderHallLevel']
         return cls( player_tag = data['tag'][1:],
                     time = pull_time,
                     town_hall = data['townHallLevel'],
-                    builder_hall = data['builderHallLevel'],
+                    builder_hall = builder,
                     xp = data['expLevel'],
                     best_trophies = data['bestTrophies'],
                     best_builder = data['bestVersusTrophies'],

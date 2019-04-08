@@ -24,6 +24,12 @@ class Activity_Tracker:
         print('Found {} active players'.format(len(self.player_list)))
         self.issues = []
     
+    @property
+    def activity_array(self):
+        if not hasattr(self, '_activity_array'):
+            self.create_activity_array()
+        return self._activity_array
+    
     def _player_data_time(self, player, equality ):
         """
         return the Player_Data object before or after a specific time
@@ -39,8 +45,6 @@ class Activity_Tracker:
 
         pd = self.session.query(Player_Data).filter(Player_Data.player_tag == player.tag)
         if equality == 'before':
-            #print('Looking between {} and {}'.format(self.time_old - self.time_tolerance,
-            #                                        self.time_old))
             pd = pd.filter(Player_Data.time <= self.time_old,
                            Player_Data.time >= self.time_old - self.time_tolerance)
             pd = pd.order_by( desc(Player_Data.time) ).first()
@@ -133,7 +137,6 @@ class Activity_Tracker:
                 donates[p] = np.nan
                 continue
             donates[p] = p1.donates_total - p0.donates_total
-        print(donates)
         return donates
 
 
@@ -201,12 +204,9 @@ class Activity_Tracker:
         array['war_count'] = self.calc_war_count()
         array['resources'] = self.calc_resource_grab()
         
-        self.activity_array = array
+        self._activity_array = array
 
     def check_minimums(self):
-        if not hasattr(self, 'activity_array'):
-            self.create_activity_array()
-
         if not 'min_donates' in self.configs.keys():
             print('No minimum donations in config file')
             self.configs['min_donates'] = np.inf
@@ -229,9 +229,7 @@ class Activity_Tracker:
                       self.activity_array['resources'] < self.configs['min_resources'],
                       self.activity_array['war_count'] < self.configs['min_war_count']],axis=0)
         msk[np.isnan(self.activity_array['donates'])] = False
-        #print( np.sum(msk) )
-        #print( self.activity_array['donates'])
-        #print( self.activity_array['resources'][msk])
+        
         failed = np.sort( self.activity_array[msk], order='resources')
         message = '----------------\n'
         if len(failed) > 0:
@@ -250,12 +248,19 @@ class Activity_Tracker:
             message += '\t{} clan games\n'.format(failed['clan_games'][i])
             message += '\tCollected {} in resources\n'.format(failed['resources'][i])
             message += '----------------\n'
-        #print(message)
         return message
 
+    def congratulate(self, day_of_week=None):
+        message = ''
+        if day_of_week is None or day_of_week == 6:
+            alist = np.sort(self.activity_array, order=['donates','resources'])[::-1]
+            msk = ~np.isnan(alist['donates'])
+            message += "Let's Congratulate our Top 10 Donators for the Week!```"
+            for i in range(10):
+                message += '{:2d}. {:15}: {}\n'.format(i+1, alist['names'][msk][i].decode('utf-8'), alist['donates'][msk][i])
+            message += '```'
+        return message
     
-
-
 def removeNonAscii(s): 
     return "".join(i for i in s if ord(i)<128)
 

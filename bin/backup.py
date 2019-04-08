@@ -1,4 +1,4 @@
-#!/usr/bin/enc python3
+#!/usr/bin/env python3 
 """
 Backs up the database file to Dropbox.
 Code is basically stolen from Dropbox example
@@ -59,8 +59,9 @@ def select_revision():
     return revisions[0].rev
 
 if __name__ == '__main__':
-    discord = pc.Discord()
     try:
+        discord = pc.Discord()
+    
         # Check for an access token
         if 'dropbox' not in configs.keys() and 'token' not in configs['dropbox'].keys():
             sys.exit("ERROR: Looks like you didn't add your access token. "

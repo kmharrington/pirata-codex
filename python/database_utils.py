@@ -23,7 +23,7 @@ consoleHandler = logging.StreamHandler()
 consoleHandler.setFormatter(formater)
 db_logger.addHandler(consoleHandler)
 
-def verify_clan_table( fname = BASEDIR+'data/clans.json'):
+def verify_clan_table( ):
     """ 
     Verifies that all the clans in data/clans.json are in the database
     Adds clans to the table if missing
@@ -33,12 +33,8 @@ def verify_clan_table( fname = BASEDIR+'data/clans.json'):
     returns:
         nothing
     """
-    if not os.path.exists(fname):
-        db_logger.info( 'filename is {}'.format(fname))
-        raise ValueError('clans.json defined incorrectly')
-
-    with open(fname) as f:
-        clan_list = json.load(f)['clans']
+    
+    clan_list = configs['clans']
     
     clan_list.append( {"name":"Gone","tag":"00000000"} )
     session = get_session()

@@ -2,20 +2,18 @@ import datetime as dt
 import dateutil.parser as dp
 import requests
 import json
+from pirata_codex.config import *
 
 class Clash():
     """class for communicating with Supercell"""
 
-    def __init__(self, fname=None, clans_fname=None):
+    def __init__(self, clans_fname=None):
         """
         args: 
          fname - file name of sc_api json
          clans_fname - file name of json with list of relevant clans
         """
-        if fname is None:
-            fname = '/home/pi/pirata-codex/data/sc_api.json'
-        with open(fname) as f:
-            self.connect_info = json.load(f)
+        self.connect_info = configs['clash']
 
         if clans_fname is None:
             fname = '/home/pi/pirata-codex/data/clans.json'
@@ -72,7 +70,21 @@ class Clash():
         r = requests.get(self.connect_info['clans_url']+clan_tag+'/currentwar', self.header)
         r.raise_for_status()
         return r.json()
-    
+   
+    def get_clan_cwl_war(self, clan_tag):
+        """
+        Retrieve SuperCell data about a clan war
+        args:
+         clan_tag - the clan tag (without the #)
+        raises:
+         any connection related issues
+        returns:
+         json data from SuperCell
+        """
+        r = requests.get(self.connect_info['clans_url']+clan_tag+'/currentwar', self.header)
+        r.raise_for_status()
+        return r.json()
+
     def get_player_data(self, player_tag):
         """
         Retrieve SuperCell data about a player
