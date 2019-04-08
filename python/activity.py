@@ -250,6 +250,25 @@ class Activity_Tracker:
             message += '----------------\n'
         return message
 
+    def check_war_participation(self):
+        message = '----------------\n'
+        for player, p0, p1 in self.player_list:
+            if len(player.data) < 18:
+                continue
+            for data in player.data[-18:][::-1]:
+                if data.war_opponent is not None:
+                    break
+            if data.datetime() < dt.datetime.now() - dt.timedelta(days=14):
+
+                if player.tag in self.configs['exclude_list']['players']:
+                        continue
+                if player.current_clan_tag in self.configs['exclude_list']['clans']:
+                    continue
+
+                message += "{}'s last war was at least {} days ago\n".format(player.name, 
+                                                          (dt.datetime.now()-data.datetime()).days)
+        return message
+    
     def congratulate(self, day_of_week=None):
         message = ''
         if day_of_week is None or day_of_week == 6:
