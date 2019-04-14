@@ -194,7 +194,10 @@ def update_war_list():
         war = clash.get_clan_war(clan.tag)
         ## Add exception for when war isn't there
         if 'state' in war.keys() and war['state'] == 'notInWar':
-            war = clash.get_clan_cwl_war(clan.tag)
+            try:
+                war = clash.get_clan_cwl_war(clan.tag)
+            except:
+                continue
             if war is None:
                 continue
             if war['opponent']['name'] == clan.name:
