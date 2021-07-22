@@ -85,5 +85,6 @@ if __name__ == '__main__':
     except:
         discord.send('Database Backup Failed')
     else:
-        discord.send('Database Backup was Successful')
+        pass
+        #discord.send('Database Backup was Successful')
     

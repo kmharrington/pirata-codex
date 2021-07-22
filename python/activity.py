@@ -253,18 +253,21 @@ class Activity_Tracker:
     def check_war_participation(self):
         message = '----------------\n'
         for player, p0, p1 in self.player_list:
-            if len(player.data) < 18:
+            if player.tag in self.configs['exclude_list']['players']:
+                    continue
+            elif player.current_clan_tag in self.configs['exclude_list']['clans']:
+                    continue
+            elif len(player.data) < 18:
                 continue
             for data in player.data[-18:][::-1]:
                 if data.war_opponent is not None:
                     break
+            ## hold over from old data in the database
+            try:
+                data.datetime()
+            except:
+                continue
             if data.datetime() < dt.datetime.now() - dt.timedelta(days=14):
-
-                if player.tag in self.configs['exclude_list']['players']:
-                        continue
-                if player.current_clan_tag in self.configs['exclude_list']['clans']:
-                    continue
-
                 message += "{}'s last war was at least {} days ago\n".format(player.name, 
                                                           (dt.datetime.now()-data.datetime()).days)
         return message
